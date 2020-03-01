@@ -29,11 +29,17 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
+      appBar: new PreferredSize(
+        preferredSize: new Size.fromHeight(kToolbarHeight),
+        child: new Hero(
+          tag: 'app_bar',
+          child: CustomAppBar(),
+        ),
+      ),
       body: SafeArea(
           child: Container(
         child: ListView(
           children: <Widget>[
-            FirstHalf(),
             SizedBox(height: 45),
             for (var foodItem in inventoryItems.items)
               Builder(
@@ -67,6 +73,29 @@ class ItemContainer extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GestureDetector(
+      onPanUpdate: (details) {
+        if (details.delta.dx > 5) {
+          print(details.delta.dx);
+          add(item);
+          final snackBar = SnackBar(
+            content: Text('${item.name} added to Cart'),
+            duration: Duration(milliseconds: 550),
+          );
+
+          Scaffold.of(context).showSnackBar(snackBar);
+        }
+        if (details.delta.dx < -5) {
+          if (item.quantity > 1) {
+            remove(item);
+            final snackBar = SnackBar(
+              content: Text('One ${item.name} removed to Cart'),
+              duration: Duration(milliseconds: 550),
+            );
+
+            Scaffold.of(context).showSnackBar(snackBar);
+          }
+        }
+      },
       onTap: () {
         add(item);
         final snackBar = SnackBar(
@@ -94,60 +123,15 @@ class FirstHalf extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(35, 25, 0, 0),
+      padding: const EdgeInsets.fromLTRB(15, 25, 0, 0),
       child: Column(
         children: <Widget>[
           CustomAppBar(),
-          // title(),
-          // searchBar(),
-          // SizedBox(height: 45),
-          // categories(),
         ],
       ),
     );
   }
 }
-
-// Widget categories() {
-//   return Container(
-//     height: 185,
-//     child: ListView(
-//       scrollDirection: Axis.horizontal,
-//       children: <Widget>[
-//         CategoryListItem(
-//           categoryIcon: Icons.bug_report,
-//           categoryName: "Burgers",
-//           availability: 12,
-//           selected: true,
-//         ),
-//         CategoryListItem(
-//           categoryIcon: Icons.bug_report,
-//           categoryName: "Pizza",
-//           availability: 12,
-//           selected: false,
-//         ),
-//         CategoryListItem(
-//           categoryIcon: Icons.bug_report,
-//           categoryName: "Rolls",
-//           availability: 12,
-//           selected: false,
-//         ),
-//         CategoryListItem(
-//           categoryIcon: Icons.bug_report,
-//           categoryName: "Burgers",
-//           availability: 12,
-//           selected: false,
-//         ),
-//         CategoryListItem(
-//           categoryIcon: Icons.bug_report,
-//           categoryName: "Burgers",
-//           availability: 12,
-//           selected: false,
-//         ),
-//       ],
-//     ),
-//   );
-// }
 
 class Items extends StatelessWidget {
   Items({
@@ -317,31 +301,6 @@ class CategoryListItem extends StatelessWidget {
   }
 }
 
-// Widget searchBar() {
-//   return Row(
-//     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-//     children: <Widget>[
-//       Icon(
-//         Icons.search,
-//         color: Colors.black45,
-//       ),
-//       SizedBox(width: 20),
-//       Expanded(
-//         child: TextField(
-//           decoration: InputDecoration(
-//               hintText: "Search....",
-//               contentPadding: EdgeInsets.symmetric(vertical: 10),
-//               hintStyle: TextStyle(
-//                 color: Colors.black87,
-//               ),
-//               border: UnderlineInputBorder(
-//                   borderSide: BorderSide(color: Colors.red))),
-//         ),
-//       ),
-//     ],
-//   );
-// }
-
 Widget title() {
   return Row(
     mainAxisAlignment: MainAxisAlignment.start,
@@ -367,8 +326,9 @@ class CustomAppBar extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final CartListBloc bloc = BlocProvider.getBloc<CartListBloc>();
+
     return Container(
-      margin: EdgeInsets.only(bottom: 15),
+      // margin: EdgeInsets.only(bottom: 15),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: <Widget>[
@@ -377,10 +337,11 @@ class CustomAppBar extends StatelessWidget {
           StreamBuilder(
             stream: bloc.listStream,
             builder: (context, snapshot) {
-              List<InventoryItem> foodItems = snapshot.data;
-              int length = foodItems != null ? foodItems.length : 0;
+              List<InventoryItem> items = snapshot.data;
+              int length =
+                  items != null ? items.fold(0, (p, c) => p + c.quantity) : 0;
 
-              return buildGestureDetector(length, context, foodItems);
+              return buildGestureDetector(length, context, items);
             },
           )
         ],
